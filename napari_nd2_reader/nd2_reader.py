@@ -10,12 +10,25 @@ Replace code below accordingly.  For complete documentation see:
 https://napari.org/docs/plugins/for_plugin_developers.html
 """
 import numpy as np
+import ND2Reader
+from dask import delayed
+import dask.array as da
+import toolz as tz
 from napari_plugin_engine import napari_hook_implementation
+
+
+def get_nd2_vol(nd2_data, c, frame):
+    nd2_data.default_coords['c']=c
+    nd2_data.bundle_axes = ('y', 'x', 'z')
+    v = nd2_data.get_frame(frame)
+    v = np.array(v)
+    return v
+
 
 
 @napari_hook_implementation
 def napari_get_reader(path):
-    """A basic implementation of the napari_get_reader hook specification.
+    """Returns reader if path is valid .nd2 file, otherwise None
 
     Parameters
     ----------
@@ -25,17 +38,12 @@ def napari_get_reader(path):
     Returns
     -------
     function or None
-        If the path is a recognized format, return a function that accepts the
+        If the path is a recognized nd2 file, return a function that accepts the
         same path or list of paths, and returns a list of layer data tuples.
     """
-    if isinstance(path, list):
-        # reader plugins may be handed single path, or a list of paths.
-        # if it is a list, it is assumed to be an image stack...
-        # so we are only going to look at the first file.
-        path = path[0]
 
-    # if we know we cannot read the file, we immediately return None.
-    if not path.endswith(".npy"):
+    # can only read nd2 files
+    if not path.endswith(".nd2"):
         return None
 
     # otherwise we return the *function* that can read ``path``.
@@ -64,16 +72,22 @@ def reader_function(path):
         Both "meta", and "layer_type" are optional. napari will default to
         layer_type=="image" if not provided
     """
-    # handle both a string and a list of strings
-    paths = [path] if isinstance(path, str) else path
-    # load all files into array
-    arrays = [np.load(_path) for _path in paths]
-    # stack arrays into single array
-    data = np.squeeze(np.stack(arrays))
+    nd2_data = ND2Reader('200519_IVMTR69_Inj4_dmso_exp3.nd2')
+    object_channel = 2
 
-    # optional kwargs for the corresponding viewer.add_* method
-    # https://napari.org/docs/api/napari.components.html#module-napari.components.add_layers_mixin
-    add_kwargs = {}
+    frame_0 = get_nd2_vol(nd2_data, object_channel, 70)
+
+    nd2vol = tz.curry(get_nd2_vol)
+    arr = da.stack(
+    [da.from_delayed(delayed(nd2vol(nd2_data, 2))(i),
+     shape=frame_0.shape,
+     dtype=frame_0.dtype)
+     for  i in range(193)]  # note hardcoded n-timepoints
+     )
+
+    add_kwargs = {
+        "scale": [1, 1, 1, 4]
+    }
 
     layer_type = "image"  # optional, default is "image"
-    return [(data, add_kwargs, layer_type)]
+    return [(arr, add_kwargs, layer_type)]
