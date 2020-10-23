@@ -10,7 +10,7 @@ Replace code below accordingly.  For complete documentation see:
 https://napari.org/docs/plugins/for_plugin_developers.html
 """
 import numpy as np
-import ND2Reader
+from nd2reader import ND2Reader
 from dask import delayed
 import dask.array as da
 import toolz as tz
@@ -72,7 +72,7 @@ def reader_function(path):
         Both "meta", and "layer_type" are optional. napari will default to
         layer_type=="image" if not provided
     """
-    nd2_data = ND2Reader('200519_IVMTR69_Inj4_dmso_exp3.nd2')
+    nd2_data = ND2Reader(path)
     object_channel = 2
 
     frame_0 = get_nd2_vol(nd2_data, object_channel, 70)
