@@ -15,11 +15,12 @@ from dask import delayed
 import dask.array as da
 import toolz as tz
 from napari_plugin_engine import napari_hook_implementation
+import dask
 
 
 def get_nd2_vol(nd2_data, c, frame):
     nd2_data.default_coords['c']=c
-    nd2_data.bundle_axes = ('y', 'x', 'z')
+    nd2_data.bundle_axes = ( 'z', 'y', 'x',)
     v = nd2_data.get_frame(frame)
     v = np.array(v)
     return v
@@ -73,21 +74,37 @@ def reader_function(path):
         layer_type=="image" if not provided
     """
     nd2_data = ND2Reader(path)
-    object_channel = 2
-
-    frame_0 = get_nd2_vol(nd2_data, object_channel, 70)
+    channels = nd2_data.metadata['channels']
+    n_timepoints = nd2_data.sizes['t']
+    z_depth = nd2_data.sizes['z']
+    frame_shape = (z_depth, *nd2_data.frame_shape)
+    frame_dtype = nd2_data._dtype
 
     nd2vol = tz.curry(get_nd2_vol)
-    arr = da.stack(
-    [da.from_delayed(delayed(nd2vol(nd2_data, 2))(i),
-     shape=frame_0.shape,
-     dtype=frame_0.dtype)
-     for  i in range(193)]  # note hardcoded n-timepoints
-     )
+    channel_dict = dict(zip(channels, [[] for _ in range(len(channels))]))
 
-    add_kwargs = {
-        "scale": [1, 1, 1, 4]
-    }
+    for i, channel in enumerate(channels):
+        arr = da.stack(
+            [da.from_delayed(delayed(nd2vol(nd2_data, i))(j),
+            shape=frame_shape,
+            dtype=frame_dtype)
+            for  j in range(n_timepoints)]
+            )
+        channel_dict[channel] = dask.optimize(arr)
 
-    layer_type = "image"  # optional, default is "image"
-    return [(arr, add_kwargs, layer_type)]
+    layer_list = []
+    for channel_name, channel in channel_dict.items():
+        add_kwargs = {
+            "scale": [1, 1, 1, 4],
+            "name": channel_name,
+            "visible": channel_name == "Alxa 647"
+        }
+        layer_type = "image"
+        layer_list.append(
+            (
+                channel,
+                add_kwargs,
+                layer_type
+            )
+        )       
+    return layer_list
