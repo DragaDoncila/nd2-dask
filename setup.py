@@ -22,10 +22,10 @@ with open('requirements.txt') as f:
 
 
 # https://github.com/pypa/setuptools_scm
-use_scm = {"write_to": "napari_nd2_reader/_version.py"}
+use_scm = {"write_to": "nd2_dask/_version.py"}
 
 setup(
-    name='napari-nd2-reader',
+    name='nd2_dask',
     author='Draga Doncila Pop',
     author_email='ddon0001@student.monash.edu',
     license='BSD-3',
@@ -54,7 +54,7 @@ setup(
     ],
     entry_points={
         'napari.plugin': [
-            'nd2-reader = napari_nd2_reader',
+            'nd2-reader = nd2_dask.nd2_reader',
         ],
     },
 )
