@@ -10,7 +10,8 @@ Replace code below accordingly.  For complete documentation see:
 https://napari.org/docs/plugins/for_plugin_developers.html
 """
 import numpy as np
-from nd2reader import ND2Reader
+# from nd2reader import ND2Reader
+from pims import ND2_Reader
 from dask import delayed
 import dask.array as da
 import toolz as tz
@@ -20,8 +21,8 @@ import dask
 
 def get_nd2_vol(nd2_data, c, frame):
     nd2_data.default_coords['c']=c
-    nd2_data.bundle_axes = ( 'z', 'y', 'x',)
-    v = nd2_data.get_frame(frame)
+    nd2_data.bundle_axes = 'zyx'
+    v = nd2_data[frame]
     v = np.array(v)
     return v
 
@@ -73,12 +74,11 @@ def reader_function(path):
         Both "meta", and "layer_type" are optional. napari will default to
         layer_type=="image" if not provided
     """
-    nd2_data = ND2Reader(path)
-    channels = nd2_data.metadata['channels']
+    nd2_data = ND2_Reader(path)
+    channels = [nd2_data.metadata[f"plane_{i}"]["name"] for i in range(0, nd2_data.sizes['c'])]
     n_timepoints = nd2_data.sizes['t']
-    z_depth = nd2_data.sizes['z']
-    frame_shape = (z_depth, *nd2_data.frame_shape)
-    frame_dtype = nd2_data._dtype
+    frame_shape = (nd2_data.frame_shape)
+    frame_dtype = nd2_data.pixel_type
 
     nd2vol = tz.curry(get_nd2_vol)
     channel_dict = dict(zip(channels, [[] for _ in range(len(channels))]))
@@ -87,7 +87,8 @@ def reader_function(path):
         arr = da.stack(
             [da.from_delayed(delayed(nd2vol(nd2_data, i))(j),
             shape=frame_shape,
-            dtype=frame_dtype)
+            dtype=frame_dtype
+            )
             for  j in range(n_timepoints)]
             )
         channel_dict[channel] = dask.optimize(arr)
@@ -106,5 +107,5 @@ def reader_function(path):
                 add_kwargs,
                 layer_type
             )
-        )       
+        )
     return layer_list
