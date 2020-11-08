@@ -1,10 +1,10 @@
-# napari-nd2-reader
+# nd2-dask
 
-[![License](https://img.shields.io/pypi/l/napari-nd2-reader.svg?color=green)](https://github.com/napari/napari-nd2-reader/raw/master/LICENSE)
-[![PyPI](https://img.shields.io/pypi/v/napari-nd2-reader.svg?color=green)](https://pypi.org/project/napari-nd2-reader)
-[![Python Version](https://img.shields.io/pypi/pyversions/napari-nd2-reader.svg?color=green)](https://python.org)
-[![tests](https://github.com/DragaDoncila/napari-nd2-reader/workflows/tests/badge.svg)](https://github.com/DragaDoncila/napari-nd2-reader/actions)
-[![codecov](https://codecov.io/gh/DragaDoncila/napari-nd2-reader/branch/master/graph/badge.svg)](https://codecov.io/gh/DragaDoncila/napari-nd2-reader)
+[![License](https://img.shields.io/pypi/l/nd2-dask.svg?color=green)](https://github.com/napari/nd2-dask/raw/master/LICENSE)
+[![PyPI](https://img.shields.io/pypi/v/nd2-dask.svg?color=green)](https://pypi.org/project/nd2-dask)
+[![Python Version](https://img.shields.io/pypi/pyversions/nd2-dask.svg?color=green)](https://python.org)
+[![tests](https://github.com/DragaDoncila/nd2-dask/workflows/tests/badge.svg)](https://github.com/DragaDoncila/nd2-dask/actions)
+[![codecov](https://codecov.io/gh/DragaDoncila/nd2-dask/branch/master/graph/badge.svg)](https://codecov.io/gh/DragaDoncila/nd2-dask)
 
 Plugin to load nd2 data into napari
 
@@ -22,9 +22,9 @@ https://napari.org/docs/plugins/index.html
 
 ## Installation
 
-You can install `napari-nd2-reader` via [pip]:
+You can install `nd2-dask` via [pip]:
 
-    pip install napari-nd2-reader
+    pip install nd2-dask
 
 ## Contributing
 
@@ -34,7 +34,7 @@ the coverage at least stays the same before you submit a pull request.
 ## License
 
 Distributed under the terms of the [BSD-3] license,
-"napari-nd2-reader" is free and open source software
+"nd2-dask" is free and open source software
 
 ## Issues
 
@@ -50,7 +50,7 @@ If you encounter any problems, please [file an issue] along with a detailed desc
 [Apache Software License 2.0]: http://www.apache.org/licenses/LICENSE-2.0
 [Mozilla Public License 2.0]: https://www.mozilla.org/media/MPL/2.0/index.txt
 [cookiecutter-napari-plugin]: https://github.com/napari/cookiecutter-napari-plugin
-[file an issue]: https://github.com/DragaDoncila/napari-nd2-reader/issues
+[file an issue]: https://github.com/DragaDoncila/nd2-dask/issues
 [napari]: https://github.com/napari/napari
 [tox]: https://tox.readthedocs.io/en/latest/
 [pip]: https://pypi.org/project/pip/

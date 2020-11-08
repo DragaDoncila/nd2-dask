@@ -30,7 +30,7 @@ setup(
     author='Draga Doncila Pop',
     author_email='ddon0001@student.monash.edu',
     license='BSD-3',
-    url='https://github.com/DragaDoncila/napari-nd2-reader',
+    url='https://github.com/DragaDoncila/nd2-dask',
     description='Plugin to load nd2 data into napari',
     long_description=read('README.md'),
     long_description_content_type='text/markdown',
