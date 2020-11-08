@@ -26,6 +26,7 @@ use_scm = {"write_to": "nd2_dask/_version.py"}
 
 setup(
     name='nd2_dask',
+    version='0.0.1',
     author='Draga Doncila Pop',
     author_email='ddon0001@student.monash.edu',
     license='BSD-3',
@@ -36,8 +37,8 @@ setup(
     packages=find_packages(),
     python_requires='>=3.6',
     install_requires=requirements,
-    use_scm_version=use_scm,
-    setup_requires=['setuptools_scm'],
+    # use_scm_version=use_scm,
+    # setup_requires=['setuptools_scm'],
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
