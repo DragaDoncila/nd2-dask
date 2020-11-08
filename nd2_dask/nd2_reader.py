@@ -18,21 +18,19 @@ import toolz as tz
 from napari_plugin_engine import napari_hook_implementation
 import dask
 
-
-def get_pims_nd2_vol(nd2_data, c, frame):
+def get_pims_nd2_vol(nd2_data, c, all_frames, block_id):
     nd2_data.default_coords['c']=c
     nd2_data.bundle_axes = 'zyx'
-    v = nd2_data[frame]
+    v = nd2_data[block_id[0]]
     v = np.array(v)
-    return v
+    return v[np.newaxis]
 
-
-def get_nd2reader_nd2_vol(nd2_data, c, frame):
+def get_nd2reader_nd2_vol(nd2_data, c, all_frames, block_id):
     nd2_data.default_coords['c']=c
     nd2_data.bundle_axes = ('z', 'y', 'x')
-    v = nd2_data.get_frame(frame)
+    v = nd2_data.get_frame(block_id[0])
     v = np.array(v)
-    return v    
+    return v[np.newaxis]
 
 @napari_hook_implementation(specname="napari_get_reader")
 def napari_get_pims_reader(path):
@@ -109,9 +107,8 @@ def pims_reader(path):
     n_timepoints = nd2_data.sizes['t']
     frame_shape = nd2_data.frame_shape
     frame_dtype = nd2_data.pixel_type
-    nd2vol = tz.curry(get_pims_nd2_vol)
     channel_dict = dict(zip(channels, [[] for _ in range(len(channels))]))
-    layer_list = get_layer_list(channels, nd2vol, nd2_data, frame_shape, frame_dtype, n_timepoints)
+    layer_list = get_layer_list(channels, get_pims_nd2_vol, nd2_data, frame_shape, frame_dtype, n_timepoints)
 
     return layer_list
 
@@ -144,8 +141,7 @@ def nd2_reader(path):
     z_depth = nd2_data.sizes['z']
     frame_shape = (z_depth, *nd2_data.frame_shape)
     frame_dtype = nd2_data._dtype
-    nd2vol = tz.curry(get_nd2reader_nd2_vol)
-    layer_list = get_layer_list(channels, nd2vol, nd2_data, frame_shape, frame_dtype, n_timepoints)
+    layer_list = get_layer_list(channels, get_nd2reader_nd2_vol, nd2_data, frame_shape, frame_dtype, n_timepoints)
 
     return layer_list
 
@@ -153,18 +149,21 @@ def nd2_reader(path):
 def get_layer_list(channels, nd2_func, nd2_data, frame_shape, frame_dtype, n_timepoints):
     channel_dict = dict(zip(channels, [[] for _ in range(len(channels))]))
     for i, channel in enumerate(channels):
-        arr = da.stack(
-            [da.from_delayed(delayed(nd2_func(nd2_data, i))(j),
-            shape=frame_shape,
-            dtype=frame_dtype)
-            for  j in range(n_timepoints)]
-            )
-        channel_dict[channel] = dask.optimize(arr)
+        def func(arr, block_id):
+            nd2_func(nd2_data, i, arr, block_id)
+        nz, ny, nx = frame_shape
+        arr = da.map_blocks(
+            func,
+            np.arange(n_timepoints),
+            chunks=((1,) * n_timepoints, (nz,), (ny,), (nx,)),
+            dtype=frame_dtype,
+        )
+        channel_dict[channel] = arr
 
     layer_list = []
     for channel_name, channel in channel_dict.items():
         add_kwargs = {
-            "scale": [1, 1, 1, 4],
+            "scale": [1, 4, 1, 1],
             "name": channel_name,
             "visible": channel_name == "Alxa 647"
         }
@@ -175,5 +174,5 @@ def get_layer_list(channels, nd2_func, nd2_data, frame_shape, frame_dtype, n_tim
                 add_kwargs,
                 layer_type
             )
-        )       
+        )
     return layer_list
