@@ -4,3 +4,4 @@ nd2reader
 pims-nd2
 dask
 toolz
+vispy

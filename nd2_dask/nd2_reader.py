@@ -17,6 +17,19 @@ import dask.array as da
 import toolz as tz
 from napari_plugin_engine import napari_hook_implementation
 import dask
+from vispy.color import Colormap
+
+CHANNEL_COLORS = {
+    "Alxa 647": (1.0, 0.5019607843137255, 1.0),
+    "GaAsP Alexa 568": (1.0, 0.0, 0.0),
+    "GaAsP Alexa 488": (0.0, 1.0, 0.0),
+    "TD": (1, 1, 1)
+}
+VISIBLE = [
+    "Alxa 647",
+    "GaAsP Alexa 568",
+    "GaAsP Alexa 488"
+    ]
 
 
 def get_pims_nd2_vol(nd2_data, c, frame):
@@ -176,10 +189,16 @@ def get_layer_list(channels, nd2_func, nd2_data, frame_shape, frame_dtype, n_tim
 
     layer_list = []
     for channel_name, channel in channel_dict.items():
+        visible = channel_name in VISIBLE
+        blending = 'additive' if visible else 'translucent'
+        channel_color = list(CHANNEL_COLORS[channel_name])
+        color = Colormap([[0, 0, 0],channel_color])
         add_kwargs = {
             "scale": [1, 1, 1, 1],
             "name": channel_name,
-            "visible": channel_name == "Alxa 647"
+            "visible": visible,
+            "colormap": color,
+            "blending": blending
         }
         layer_type = "image"
         layer_list.append(
