@@ -177,7 +177,7 @@ def get_layer_list(channels, nd2_func, nd2_data, frame_shape, frame_dtype, n_tim
     layer_list = []
     for channel_name, channel in channel_dict.items():
         add_kwargs = {
-            "scale": [1, 4, 1, 1],
+            "scale": [1, 1, 1, 1],
             "name": channel_name,
             "visible": channel_name == "Alxa 647"
         }
