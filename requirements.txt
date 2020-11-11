@@ -1,7 +1,6 @@
 napari-plugin-engine>=0.1.4
 numpy
 nd2reader
-pims-nd2
 dask
 toolz
 vispy
