@@ -48,21 +48,22 @@ def get_metadata(path):
         x_scale = y_scale = meta['pixel_microns']
         # sampling interval is in ms, we convert to s
         t_scale = meta['experiment']['loops'][0]['sampling_interval'] / 1e3
-        scale = [t_scale, z_scale, y_scale, x_scale]
+        scale = [1, z_scale, -y_scale, -x_scale]
 
         # Translation
         centre_x = raw_meta_seq[b'SLxPictureMetadata'][b'dXPos']
         centre_y = raw_meta_seq[b'SLxPictureMetadata'][b'dYPos']
-        centre_z = raw_meta_seq[b'SLxPictureMetadata'][b'dZPos']
+        # z appears to be interpreted as the origin by Imaris...
+        # not sure this is correct...
+        origin_z = raw_meta_seq[b'SLxPictureMetadata'][b'dZPos']
         size_x = image.sizes['x']
         size_y = image.sizes['y']
-        size_z = image.sizes['z']
         origin_t = 0  # TODO(jni): find a good way to set timepoint offset
         origin = (
             origin_t,
-            centre_z - size_z / 2 * z_scale,
-            centre_y - size_y / 2 * y_scale,
-            centre_x - size_x / 2 * x_scale,
+            origin_z,
+            centre_y + size_y / 2 * y_scale,
+            centre_x + size_x / 2 * x_scale,
         )
     return {'scale': scale, 'translate': origin}
 
