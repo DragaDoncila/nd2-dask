@@ -26,7 +26,7 @@ use_scm = {"write_to": "nd2_dask/_version.py"}
 
 setup(
     name='nd2_dask',
-    version='0.0.3',
+    version='0.0.4',
     author='Draga Doncila Pop',
     author_email='ddon0001@student.monash.edu',
     license='BSD-3',
