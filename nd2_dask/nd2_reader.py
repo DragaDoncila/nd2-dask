@@ -18,17 +18,37 @@ from napari_plugin_engine import napari_hook_implementation
 import dask
 from vispy.color import Colormap
 
-CHANNEL_COLORS = {
-    "Alxa 647": (1.0, 0.5019607843137255, 1.0),
-    "GaAsP Alexa 568": (1.0, 0.0, 0.0),
-    "GaAsP Alexa 488": (0.0, 1.0, 0.0),
-    "TD": (1, 1, 1)
-}
-VISIBLE = [
-    "Alxa 647",
-    "GaAsP Alexa 568",
-    "GaAsP Alexa 488"
-    ]
+
+CHANNEL_METADATA_PATH = (
+        b'SLxPictureMetadata',
+        b'sPicturePlanes',
+        b'sSampleSetting',
+        b'a0',
+        b'pCameraSetting',
+        b'Metadata',
+        b'Channels',  # contains dict of channels
+        # b'Channel_0',  # channel key
+        # b'Color',   # color, or b'Name' name
+        )
+
+
+def gettup(d : dict, k : tuple):
+    """Get value inside a nested dictionary by passing list of keys."""
+    first, *rest = k
+    if len(rest) == 0:
+        return d[first]
+    else:
+        return gettup(d[first], rest)
+
+
+def decimal2rgba(dec):
+    """Convert decimal color to RGBA float array.
+
+    References
+    ----------
+    https://convertingcolors.com/
+    """
+    return np.array([dec], '<u4').view(np.uint8) / 255
 
 
 def get_metadata(path):
@@ -65,7 +85,16 @@ def get_metadata(path):
             centre_y + size_y / 2 * y_scale,
             centre_x + size_x / 2 * x_scale,
         )
-    return {'scale': scale, 'translate': origin}
+
+        # Colors
+        channels_dict = gettup(raw_meta_seq, CHANNEL_METADATA_PATH)
+        channel_colors = {
+            channels_dict[ch][b'Name'].decode(): \
+                                decimal2rgba(channels_dict[ch][b'Color'])
+            for ch in channels_dict
+            }
+
+    return {'scale': scale, 'translate': origin, 'channels': channel_colors}
 
 
 
@@ -150,17 +179,18 @@ def get_layer_list(channels, nd2_func, path, frame_shape, frame_dtype, n_timepoi
 
     layer_list = []
     for channel_name, channel in channel_dict.items():
-        visible = channel_name in VISIBLE
+        visible = True
         blending = 'additive' if visible else 'translucent'
-        channel_color = list(CHANNEL_COLORS[channel_name])
-        color = Colormap([[0, 0, 0],channel_color])
         meta = get_metadata(path)
+        channel_color = meta['channels'][channel_name]
+        color = Colormap([[0, 0, 0], channel_color[:-1]])  # ignore alpha
         add_kwargs = {
             "name": channel_name,
             "visible": visible,
             "colormap": color,
             "blending": blending,
-            **meta
+            "scale": meta['scale'],
+            "translate": meta['translate'],
         }
         layer_type = "image"
         layer_list.append(
@@ -169,5 +199,5 @@ def get_layer_list(channels, nd2_func, path, frame_shape, frame_dtype, n_timepoi
                 add_kwargs,
                 layer_type
             )
-        )       
+        )
     return layer_list
