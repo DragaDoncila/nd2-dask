@@ -110,8 +110,8 @@ def get_nd2reader_nd2_vol(path, c, frame):
 
         nd2_data.bundle_axes = [ax for ax in 'zyx' if ax in nd2_data.axes]
         v = nd2_data.get_frame(frame)
-        v = np.array(v)
-    return v    
+        v = np.array(v)[None]
+    return v
 
 
 @napari_hook_implementation(specname="napari_get_reader")
@@ -177,13 +177,14 @@ def nd2_reader(path):
 def get_layer_list(channels, nd2_func, path, frame_shape, frame_dtype, n_timepoints):
     channel_dict = dict(zip(channels, [[] for _ in range(len(channels))]))
     for i, channel in enumerate(channels):
-        arr = da.stack(
-            [da.from_delayed(delayed(nd2_func(path, i))(j),
-            shape=frame_shape,
-            dtype=frame_dtype)
-            for  j in range(n_timepoints)]
-            )
-        channel_dict[channel] = dask.optimize(arr)[0]
+        arr = da.map_blocks(
+            nd2_func(path,i),
+            da.arange(n_timepoints,chunks=1),
+            dtype=frame_dtype,
+            chunks=da.core.normalize_chunks((1,*frame_shape),(n_timepoints,*frame_shape)),
+            new_axis=list(range(1,1+len(frame_shape)))
+        )
+        channel_dict[channel] = arr#dask.optimize(arr)[0]
 
     layer_list = []
     for channel_name, channel in channel_dict.items():
