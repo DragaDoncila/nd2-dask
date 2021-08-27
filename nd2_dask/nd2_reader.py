@@ -105,8 +105,8 @@ def get_metadata(path):
 
 def get_nd2reader_nd2_vol(path, c, frame):
     with ND2Reader(path) as nd2_data:
-        if len(nd2_data.metadata['channels'])>1:
-            nd2_data.default_coords['c']=c
+        if 'z' in nd2_data.axes:
+            nd2_data.default_coords['c'] = c
 
         nd2_data.bundle_axes = [ax for ax in 'zyx' if ax in nd2_data.axes]
         v = nd2_data.get_frame(frame)
@@ -184,7 +184,7 @@ def get_layer_list(channels, nd2_func, path, frame_shape, frame_dtype, n_timepoi
             chunks=da.core.normalize_chunks((1,*frame_shape),(n_timepoints,*frame_shape)),
             new_axis=list(range(1,1+len(frame_shape)))
         )
-        channel_dict[channel] = arr#dask.optimize(arr)[0]
+        channel_dict[channel] = arr
 
     layer_list = []
     for channel_name, channel in channel_dict.items():
