@@ -105,7 +105,7 @@ def get_metadata(path):
 
 def get_nd2reader_nd2_vol(path, c, frame):
     with ND2Reader(path) as nd2_data:
-        if 'z' in nd2_data.axes:
+        if 'c' in nd2_data.axes:
             nd2_data.default_coords['c'] = c
 
         nd2_data.bundle_axes = [ax for ax in 'zyx' if ax in nd2_data.axes]
