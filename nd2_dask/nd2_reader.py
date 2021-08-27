@@ -70,7 +70,7 @@ def get_metadata(path):
         try:
             t_scale = meta['experiment']['loops'][0]['sampling_interval'] / 1e3
         except IndexError:
-            t_scale = 0
+            t_scale = 1
 
         scale = [1, z_scale, -y_scale, -x_scale]
 
@@ -110,7 +110,7 @@ def get_nd2reader_nd2_vol(path, c, frame):
 
         nd2_data.bundle_axes = [ax for ax in 'zyx' if ax in nd2_data.axes]
         v = nd2_data.get_frame(frame)
-        v = np.array(v)[None]
+        v = np.array(v,ndmin=4)
     return v
 
 
@@ -166,7 +166,7 @@ def nd2_reader(path):
         if 'z' in nd2_data.axes:
             frame_shape = (nd2_data.sizes['z'], *nd2_data.frame_shape)
         else:
-            frame_shape = nd2_data.frame_shape
+            frame_shape = (1, *nd2_data.frame_shape)
         frame_dtype = nd2_data._dtype
         nd2vol = tz.curry(get_nd2reader_nd2_vol)
         layer_list = get_layer_list(channels, nd2vol, path, frame_shape, frame_dtype, n_timepoints)
