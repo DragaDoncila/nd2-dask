@@ -71,7 +71,6 @@ def get_metadata(path):
             t_scale = meta['experiment']['loops'][0]['sampling_interval'] / 1e3
         except IndexError:
             t_scale = 1
-
         scale = [1, z_scale, -y_scale, -x_scale]
 
         # Translation
@@ -107,7 +106,6 @@ def get_nd2reader_nd2_vol(path, c, frame):
     with ND2Reader(path) as nd2_data:
         if 'c' in nd2_data.axes:
             nd2_data.default_coords['c'] = c
-
         nd2_data.bundle_axes = [ax for ax in 'zyx' if ax in nd2_data.axes]
         v = nd2_data.get_frame(frame)
         v = np.array(v,ndmin=4)
