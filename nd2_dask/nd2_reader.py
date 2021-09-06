@@ -67,7 +67,10 @@ def get_metadata(path):
             z_scale = 4  # TODO(jni): not a good default in general, but needed
         x_scale = y_scale = meta['pixel_microns']
         # sampling interval is in ms, we convert to s
-        t_scale = meta['experiment']['loops'][0]['sampling_interval'] / 1e3
+        try:
+            t_scale = meta['experiment']['loops'][0]['sampling_interval'] / 1e3
+        except IndexError:
+            t_scale = 1
         scale = [1, z_scale, -y_scale, -x_scale]
 
         # Translation
@@ -101,11 +104,12 @@ def get_metadata(path):
 
 def get_nd2reader_nd2_vol(path, c, frame):
     with ND2Reader(path) as nd2_data:
-        nd2_data.default_coords['c']=c
-        nd2_data.bundle_axes = ('z', 'y', 'x')
+        if 'c' in nd2_data.axes:
+            nd2_data.default_coords['c'] = c
+        nd2_data.bundle_axes = [ax for ax in 'zyx' if ax in nd2_data.axes]
         v = nd2_data.get_frame(frame)
-        v = np.array(v)
-    return v    
+        v = np.array(v,ndmin=4)
+    return v
 
 
 @napari_hook_implementation(specname="napari_get_reader")
@@ -157,8 +161,10 @@ def nd2_reader(path):
     with ND2Reader(path) as nd2_data:
         channels = nd2_data.metadata['channels']
         n_timepoints = nd2_data.sizes['t']
-        z_depth = nd2_data.sizes['z']
-        frame_shape = (z_depth, *nd2_data.frame_shape)
+        if 'z' in nd2_data.axes:
+            frame_shape = (nd2_data.sizes['z'], *nd2_data.frame_shape)
+        else:
+            frame_shape = (1, *nd2_data.frame_shape)
         frame_dtype = nd2_data._dtype
         nd2vol = tz.curry(get_nd2reader_nd2_vol)
         layer_list = get_layer_list(channels, nd2vol, path, frame_shape, frame_dtype, n_timepoints)
@@ -169,29 +175,33 @@ def nd2_reader(path):
 def get_layer_list(channels, nd2_func, path, frame_shape, frame_dtype, n_timepoints):
     channel_dict = dict(zip(channels, [[] for _ in range(len(channels))]))
     for i, channel in enumerate(channels):
-        arr = da.stack(
-            [da.from_delayed(delayed(nd2_func(path, i))(j),
-            shape=frame_shape,
-            dtype=frame_dtype)
-            for  j in range(n_timepoints)]
-            )
-        channel_dict[channel] = dask.optimize(arr)[0]
+        arr = da.map_blocks(
+            nd2_func(path,i),
+            da.arange(n_timepoints,chunks=1),
+            dtype=frame_dtype,
+            chunks=da.core.normalize_chunks((1,*frame_shape),(n_timepoints,*frame_shape)),
+            new_axis=list(range(1,1+len(frame_shape)))
+        )
+        channel_dict[channel] = arr
 
     layer_list = []
     for channel_name, channel in channel_dict.items():
         visible = True
         blending = 'additive' if visible else 'translucent'
         meta = get_metadata(path)
-        channel_color = meta['channels'][channel_name]
-        color = Colormap([[0, 0, 0], channel_color[:-1]])  # ignore alpha
         add_kwargs = {
             "name": channel_name,
             "visible": visible,
-            "colormap": color,
             "blending": blending,
             "scale": meta['scale'],
             "translate": meta['translate'],
         }
+        try:
+            channel_color = meta['channels'][channel_name]
+            color = Colormap([[0, 0, 0], channel_color[:-1]])  # ignore alpha
+            add_kwargs["colormap"] = color
+        except KeyError:
+            pass
         layer_type = "image"
         layer_list.append(
             (
