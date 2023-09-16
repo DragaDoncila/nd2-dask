@@ -41,7 +41,7 @@ setup(
     # setup_requires=['setuptools_scm'],
     classifiers=[
         'Development Status :: 4 - Beta',
-        'Framework :: napari',
+        # 'Framework :: napari',
         'Intended Audience :: Developers',
         'Topic :: Software Development :: Testing',
         'Programming Language :: Python',
